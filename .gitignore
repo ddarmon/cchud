@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# R session cruft
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj

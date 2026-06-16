@@ -1,0 +1,18 @@
+[Desktop Entry]
+# cchud — Claude Code Heads-Up Display (Linux)
+# Edit the absolute paths below to where this folder lives, then:
+#   chmod +x cchud.desktop cchud.sh
+#   (optionally) copy to ~/.local/share/applications/ to show in your launcher.
+# StartupWMClass=cchud matches the --class=cchud the launcher passes to Chromium,
+# so the --app window inherits the Icon below instead of the browser's.
+Type=Application
+Name=Claude Code Heads-Up Display
+GenericName=Claude Code cost HUD
+Comment=Live cost/burn HUD for Claude Code sessions
+Icon=/ABSOLUTE/PATH/TO/claude-code-usage-hub/www/icon-512.png
+Exec=sh -c '"$(dirname "%k")/cchud.sh"'
+Path=.
+Terminal=true
+Categories=Development;Utility;
+StartupWMClass=cchud
+StartupNotify=true

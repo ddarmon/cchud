@@ -1,0 +1,15 @@
+{
+  "name": "Claude Code Heads-Up Display",
+  "short_name": "cchud",
+  "description": "Live cost/burn-rate HUD for Claude Code sessions",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#e8ddc7",
+  "theme_color": "#e8ddc7",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
