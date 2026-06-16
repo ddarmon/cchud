@@ -5,6 +5,8 @@ Claude Code sessions. It opens the Shiny app in a chromeless Chromium **app
 window** (no tabs, no address bar, its own dock/taskbar entry) instead of a
 browser tab.
 
+![Claude Code Heads-Up Display](docs/screenshot.jpg)
+
 ## Layout
 
 Self-contained repo — the HUD and its data source live together:
