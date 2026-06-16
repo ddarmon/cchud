@@ -78,7 +78,8 @@ profile_dir <- file.path(tools::R_user_dir("cchud", "cache"), "profile")
 dir.create(profile_dir, recursive = TRUE, showWarnings = FALSE)
 
 open_window <- function(url, browser, wait) {
-  udd  <- if (.Platform$OS.type == "windows") shQuote(profile_dir, type = "cmd") else profile_dir
+  # system2() quotes the command but NOT args, so paths with spaces must be quoted here.
+  udd  <- if (.Platform$OS.type == "windows") shQuote(profile_dir, type = "cmd") else shQuote(profile_dir)
   args <- c(paste0("--app=", url),
             paste0("--user-data-dir=", udd),
             "--no-first-run", "--no-default-browser-check")
@@ -88,11 +89,15 @@ open_window <- function(url, browser, wait) {
 
 # If the app has been installed as a macOS PWA (browser menu -> Install), prefer
 # launching that bundle: it carries the custom Dock icon, unlike an --app window.
+# Matches the current name first, then the legacy "Usage Hub" name so an app
+# installed before the rename keeps working.
 mac_pwa_bundle <- function() {
   if (Sys.info()[["sysname"]] != "Darwin") return(NA_character_)
-  hits <- Sys.glob(file.path(path.expand("~"), "Applications", "*Apps*",
-                             "Claude Code Heads-Up Display.app"))
-  if (length(hits)) hits[1] else NA_character_
+  for (n in c("Claude Code Heads-Up Display.app", "Claude Code Usage Hub.app")) {
+    hits <- Sys.glob(file.path(path.expand("~"), "Applications", "*Apps*", n))
+    if (length(hits)) return(hits[1])
+  }
+  NA_character_
 }
 
 port_open <- function(port) {
@@ -104,6 +109,32 @@ port_open <- function(port) {
   TRUE
 }
 
+# The port is fixed (an installed Chrome App has 127.0.0.1:PORT baked into its
+# start_url), so we can't just pick a free one. Instead, if something is already
+# holding PORT — typically a previous launch whose window was force-closed, or a
+# stale server orphaned by a moved/renamed app dir — stop it and start fresh.
+# Without this, the launcher would attach to that stale server (which may have a
+# now-deleted working directory -> "cannot change working directory").
+reclaim_port <- function(port) {
+  if (!port_open(port)) return(invisible())
+  if (.Platform$OS.type == "windows") {
+    message("cchud: port ", port, " is in use — close the other cchud window first.")
+    return(invisible())
+  }
+  message("cchud: port ", port, " busy — stopping the previous server on it.")
+  pids <- suppressWarnings(system2("lsof", c("-ti", paste0("tcp:", port)),
+                                   stdout = TRUE, stderr = FALSE))
+  pids <- pids[nzchar(pids)]
+  if (length(pids)) {
+    system2("kill", pids, stdout = FALSE, stderr = FALSE)
+    Sys.sleep(0.6)
+    if (port_open(port)) {                       # didn't die -> force it
+      system2("kill", c("-9", pids), stdout = FALSE, stderr = FALSE)
+      Sys.sleep(0.4)
+    }
+  }
+}
+
 browser <- find_browser()
 if (is.na(browser)) {
   message("cchud: no Chromium-family browser found (Chrome / Edge / Brave / Chromium).")
@@ -112,6 +143,7 @@ if (is.na(browser)) {
 }
 
 have_callr <- requireNamespace("callr", quietly = TRUE)
+reclaim_port(PORT)
 
 if (!is.na(browser) && have_callr) {
   # Clean path: server in the background, window in the foreground, kill on close.
@@ -137,7 +169,7 @@ if (!is.na(browser) && have_callr) {
   pwa <- mac_pwa_bundle()
   open_app <- if (!is.na(pwa)) {
     message("cchud: opening installed app  ", basename(pwa), "  (custom icon)")
-    function() system2("open", c("-W", pwa), wait = TRUE)  # waits until it quits
+    function() system2("open", c("-W", shQuote(pwa)), wait = TRUE)  # quote: path has spaces
   } else {
     function() open_window(URL, browser, wait = TRUE)      # --app window (browser icon)
   }
