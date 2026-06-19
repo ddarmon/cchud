@@ -90,7 +90,8 @@ find_transcript <- function(id) {
 }
 
 session_cwd <- function(id, transcript) {
-  if (!is.null(.cwd_cache[[id]])) return(.cwd_cache[[id]])
+  cached <- .cwd_cache[[id]]
+  if (!is.null(cached) && !is.na(cached)) return(cached)
   cwd <- NA_character_
   if (!is.na(transcript)) {
     ls <- tryCatch(readLines(transcript, n = 60, warn = FALSE), error = function(e) character(0))
