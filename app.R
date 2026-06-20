@@ -263,6 +263,7 @@ hud_theme <- function() {  # shared parchment palette for both trajectory plots
       panel.background = element_rect(fill = "#f3ecda", color = NA),
       panel.grid       = element_line(color = "#d8cdaf"),
       text = element_text(color = "#3a3326"),
+      plot.subtitle = element_text(color = "#9a6a12", size = 12, face = "bold"),
       axis.text = element_text(color = "#8a7d5f"),
       legend.position = "bottom"
     )
@@ -438,14 +439,34 @@ server <- function(input, output, session) {
       d
     }))
 
+    # Whole-life total: each session's final cumulative cost, summed.
+    total_spend <- sum(vapply(split(df$cum, df$session), max, 0))
+
     # Optional shorter look-back (in hours) just for this whole-life plot.
     lb <- input$life_lookback
-    if (!is.null(lb) && !is.na(lb) && lb > 0)
+    windowed <- !is.null(lb) && !is.na(lb) && lb > 0
+    if (windowed) {
+      # Spend inside the window = final cum minus the cumulative cost at the
+      # window's left edge. We carry that baseline from the last snapshot
+      # strictly before the window (0 if the session began inside it), so the
+      # figure is exact rather than approximated by the first retained row.
+      window_spend <- sum(vapply(split(df, df$session), function(d) {
+        pre  <- d$cum[d$hr < -lb]
+        base <- if (length(pre)) max(pre) else 0
+        max(d$cum) - base
+      }, 0))
       df <- df[df$hr >= -lb, , drop = FALSE]
+    }
+
+    subtitle <- if (windowed)
+      sprintf("window: $%.2f  ·  total: $%.2f", window_spend, total_spend)
+    else
+      sprintf("total: $%.2f", total_spend)
 
     ggplot(df, aes(hr, cum, color = session)) +
       geom_step(linewidth = 0.9) + geom_point(size = 1) +
       labs(x = "hours ago", y = "cumulative cost ($)", color = NULL,
+           subtitle = subtitle,
            caption = if (length(unpriced))
              paste0("excluded — no pricing for: ", paste(unpriced, collapse = ", ")) else NULL) +
       scale_color_manual(values = session_colors()) +
