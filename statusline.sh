@@ -138,6 +138,10 @@ if [ -n "$cost" ]; then
   fi
 fi
 
+# --- session id (full, shown on its own line) -------------------------------
+sidseg=""
+[ -n "$session_id" ] && sidseg="${DIM}sid ${session_id}${R}"
+
 # --- lines added / removed this session -------------------------------------
 linesseg=""
 la=${added:-0}; lr=${removed:-0}
@@ -237,4 +241,7 @@ fi
 line1="${modelseg}${ctxseg}${costseg}${linesseg}${usageseg}"
 locseg="${dirseg}"
 [ -n "$gitseg" ] && locseg="${locseg}  ${gitseg}"
-printf '%s\n%s' "$line1" "$locseg"
+# Line 3: full session id (omitted entirely when unavailable).
+out="${line1}"$'\n'"${locseg}"
+[ -n "$sidseg" ] && out="${out}"$'\n'"${sidseg}"
+printf '%s' "$out"
